@@ -12,13 +12,36 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Notion Exporter
-        # ここを書き換えました
-        uses: pndurette/notion-exporter@v1
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          notion_token: ${{ secrets.NOTION_TOKEN }}
-          notion_page_id: ${{ secrets.NOTION_PAGE_ID }}
-          output_path: 'notes'
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install notion-client
+
+      - name: Export Notion to Markdown
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+        run: |
+          python - <<EOF
+          import os
+          from notion_client import Client
+
+          notion = Client(auth=os.environ["NOTION_TOKEN"])
+          page_id = os.environ["NOTION_PAGE_ID"]
+          
+          # ページタイトルと内容を取得（簡易版）
+          page = notion.pages.retrieve(page_id)
+          title = page["properties"].get("title", {}).get("title", [{}])[0].get("plain_text", "untiled")
+          
+          # notesフォルダ作成
+          os.makedirs("notes", exist_ok=True)
+          
+          with open(f"notes/{title}.md", "w", encoding="utf-8") as f:
+              f.write(f"# {title}\n\nSynced from Notion")
+          EOF
 
       - name: Commit and Push
         run: |
