@@ -1,0 +1,30 @@
+name: Notion to GitHub Sync
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 毎日日本時間の午前9時(UTC 0:00)に実行
+  workflow_dispatch:      # ボタン一つで手動実行もできるようにする
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Notion Exporter
+        # NotionをMarkdownに変換してくれる便利なツールを使います
+        uses: bsyouth/notion-exporter@v1.1
+        with:
+          notion_token: ${{ secrets.NOTION_TOKEN }}
+          notion_page_id: ${{ secrets.NOTION_PAGE_ID }}
+          output_path: 'notes' # 'notes'というフォルダの中に保存されます
+          add_notion_link: true # 元のNotionページへのリンクを末尾に付ける
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Notionから学習メモを同期" || exit 0
+          git push
