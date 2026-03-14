@@ -1,8 +1,6 @@
 name: Notion to GitHub Sync
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
@@ -13,7 +11,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -27,20 +25,38 @@ jobs:
         run: |
           python - <<EOF
           import os
+          import sys
           from notion_client import Client
+          from notion_client.errors import APIResponseError
 
-          notion = Client(auth=os.environ["NOTION_TOKEN"])
-          page_id = os.environ["NOTION_PAGE_ID"]
-          
-          # ページタイトルと内容を取得（簡易版）
-          page = notion.pages.retrieve(page_id)
-          title = page["properties"].get("title", {}).get("title", [{}])[0].get("plain_text", "untiled")
-          
-          # notesフォルダ作成
-          os.makedirs("notes", exist_ok=True)
-          
-          with open(f"notes/{title}.md", "w", encoding="utf-8") as f:
-              f.write(f"# {title}\n\nSynced from Notion")
+          token = os.environ.get("NOTION_TOKEN", "")
+          page_id = os.environ.get("NOTION_PAGE_ID", "")
+
+          # デバッグ用：文字数だけチェック（中身は表示しません）
+          print(f"DEBUG: Token length: {len(token)}")
+          print(f"DEBUG: Page ID length: {len(page_id)}")
+
+          if len(token) < 10 or len(page_id) < 30:
+              print("ERROR: Secretsが正しく設定されていない可能性があります。")
+              sys.exit(1)
+
+          try:
+              notion = Client(auth=token)
+              page = notion.pages.retrieve(page_id)
+              title_list = page["properties"].get("title", {}).get("title", [])
+              title = title_list[0].get("plain_text", "untitled") if title_list else "untitled"
+              
+              os.makedirs("notes", exist_ok=True)
+              with open(f"notes/{title}.md", "w", encoding="utf-8") as f:
+                  f.write(f"# {title}\n\nSynced from Notion successfully!")
+              print(f"SUCCESS: Saved {title}.md")
+
+          except APIResponseError as e:
+              print(f"NOTION API ERROR: {e}")
+              sys.exit(1)
+          except Exception as e:
+              print(f"GENERAL ERROR: {e}")
+              sys.exit(1)
           EOF
 
       - name: Commit and Push
@@ -48,5 +64,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "Notionから学習メモを同期" || exit 0
+          git commit -m "Notionから同期テスト" || exit 0
           git push
