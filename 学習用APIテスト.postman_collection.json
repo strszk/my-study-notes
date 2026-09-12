@@ -1,0 +1,30 @@
+{
+  "info": {
+    "_postman_id": "ac048654-925e-42b6-9455-1e1368bc540c",
+    "name": "学習用APIテスト",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "44666009"
+  },
+  "item": [
+    {
+      "name": "GET ユーザー一覧",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://jsonplaceholder.typicode.com/users",
+          "protocol": "https",
+          "host": [
+            "jsonplaceholder",
+            "typicode",
+            "com"
+          ],
+          "path": [
+            "users"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
